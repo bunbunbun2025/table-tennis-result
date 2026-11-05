@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>リーグ戦順位計算</title>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>卓球リーグ順位計算</title>
 <style>
 body{font-family:system-ui,sans-serif;max-width:850px;margin:auto;padding:12px;background:#f4f6f8;color:#222}h1{font-size:1.4rem}.box{background:white;padding:14px;border-radius:12px;margin:12px 0}label{display:block;font-weight:bold;margin:8px 0 4px}select,button{font:inherit;padding:9px;border:1px solid #ccd;border-radius:8px}button{background:#1769aa;color:white;border:0}.row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #eee}.team{text-align:center;font-weight:bold}.score select{min-width:76px}table{width:100%;border-collapse:collapse}td,th{padding:8px 4px;border-bottom:1px solid #ddd;text-align:center}th{background:#eef2f6}.help{font-size:.9rem;color:#566}.tie{padding:10px 0;border-bottom:1px solid #eee}
 </style></head><body>
-<h1>リーグ戦順位計算</h1>
+<h1>卓球リーグ順位計算</h1>
 <div class="box"><label>リーグ形式</label><select id="format"><option value="pre">予選リーグ（3ゲーム必ず実施）</option><option value="final">決勝リーグ（5ゲーム・3ゲーム先取）</option></select>
 <label>ペア数</label><select id="n"></select> <button id="make">対戦表を作成</button>
 <p id="help" class="help">予選は勝敗に関係なく3ゲーム。3－0／2－1／1－2／0－3</p>
-<p class="help">勝ち2点・負け1点。形式やペア数を変えて対戦表を作り直すと、入力結果は消去されます。</p></div>
+<p class="help">勝ち2点・負け1点。「対戦なし」は勝ち点・ゲーム数に含めません。同点時は、2組なら直接対決、対戦なしなら全試合のゲーム差。3組以上は当事者間の対戦が全てあれば当事者間のゲーム差、なければ全試合のゲーム差で判定します。なお同点なら条件に応じて直接対決またはじゃんけんで決めます。ゲーム差＝勝ちゲーム数－負けゲーム数。</p></div>
 <div class="box"><h2>試合結果入力</h2><div id="matches"></div></div>
 <div class="box"><h2>順位表</h2><div id="ranking" class="help">結果を入力してください。</div></div>
 <div class="box"><h2>じゃんけんによる順位決定</h2><p class="help">同率が残った場合、じゃんけん後の順位順を選んでください。</p><div id="ties"></div></div>
@@ -16,47 +16,132 @@ const $=x=>document.getElementById(x), pair=i=>'ペア'+(i+1);let games=[],janke
 for(let i=3;i<=16;i++){let o=document.createElement('option');o.value=i;o.textContent=i+'ペア';$('n').append(o)}
 function opts(){return $('format').value==='pre'?['3-0','2-1','1-2','0-3']:['3-0','3-1','3-2','0-3','1-3','2-3']}
 function make(){games=[];janken={};let n=+$('n').value;for(let a=0;a<n;a++)for(let b=a+1;b<n;b++)games.push({a,b,v:''});draw();calc()}
-function draw(){let root=$('matches');root.innerHTML='';games.forEach((g,k)=>{let r=document.createElement('div');r.className='row';let a=document.createElement('div');a.className='team';a.textContent=pair(g.a);let b=document.createElement('div');b.className='team';b.textContent=pair(g.b);let mid=document.createElement('div');mid.className='score';let s=document.createElement('select');let z=document.createElement('option');z.value='';z.textContent='未入力';s.append(z);opts().forEach(v=>{let o=document.createElement('option');o.value=v;o.textContent=v.replace('-','－');s.append(o)});s.value=g.v;s.onchange=()=>{games[k].v=s.value;calc()};mid.append(s);r.append(a,mid,b);root.append(r)})}
+function draw(){let root=$('matches');root.innerHTML='';games.forEach((g,k)=>{let r=document.createElement('div');r.className='row';let a=document.createElement('div');a.className='team';a.textContent=pair(g.a);let b=document.createElement('div');b.className='team';b.textContent=pair(g.b);let mid=document.createElement('div');mid.className='score';let s=document.createElement('select');let z=document.createElement('option');z.value='';z.textContent='未入力';s.append(z);opts().forEach(v=>{let o=document.createElement('option');o.value=v;o.textContent=v.replace('-','－');s.append(o)});let na=document.createElement('option');na.value='NA';na.textContent='対戦なし';s.append(na);s.value=g.v;s.onchange=()=>{games[k].v=s.value;calc()};mid.append(s);r.append(a,mid,b);root.append(r)})}
 function pct(w,l){return w+l?w/(w+l):0}
 function buckets(ids,fn){let m=new Map();ids.forEach(i=>{let x=fn(i);if(!m.has(x))m.set(x,[]);m.get(x).push(i)});return [...m.entries()].sort((a,b)=>b[0]-a[0]).map(x=>x[1])}
 function perm(a){return []}
 function calc(){
  let n=+$('n').value,s=Array.from({length:n},()=>({p:0,w:0,l:0,gf:0,ga:0}));
- games.forEach(m=>{if(!m.v)return;let [x,y]=m.v.split('-').map(Number),a=s[m.a],b=s[m.b];a.gf+=x;a.ga+=y;b.gf+=y;b.ga+=x;if(x>y){a.p+=2;b.p++;a.w++;b.l++}else{b.p+=2;a.p++;b.w++;a.l++}});
- function direct(ids){let w={};ids.forEach(i=>w[i]=0);games.forEach(m=>{if(!m.v||!ids.includes(m.a)||!ids.includes(m.b))return;let [x,y]=m.v.split('-').map(Number);w[x>y?m.a:m.b]++});return w}
+ games.forEach(m=>{
+  if(!m.v||m.v==='NA')return;
+  let [x,y]=m.v.split('-').map(Number),a=s[m.a],b=s[m.b];
+  a.gf+=x;a.ga+=y;b.gf+=y;b.ga+=x;
+  if(x>y){a.p+=2;b.p++;a.w++;b.l++}else{b.p+=2;a.p++;b.w++;a.l++}
+ });
+ const diff=i=>s[i].gf-s[i].ga;
+ function buckets(ids,metric){
+  let map=new Map();ids.forEach(i=>{let v=metric(i);if(!map.has(v))map.set(v,[]);map.get(v).push(i)});
+  return [...map.entries()].sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+ }
+ function playedBetween(a,b){
+  let m=games.find(m=>(m.a===a&&m.b===b)||(m.a===b&&m.b===a));
+  return !!(m&&m.v&&m.v!=='NA');
+ }
+ function directWinner(a,b){
+  let m=games.find(m=>(m.a===a&&m.b===b)||(m.a===b&&m.b===a));
+  if(!m||!m.v||m.v==='NA')return null;
+  let [x,y]=m.v.split('-').map(Number);
+  return m.a===a?(x>y?a:b):(x>y?b:a);
+ }
  let unresolved=[];
+ function addUnresolved(g){if(g.length>1&&!unresolved.some(x=>x.length===g.length&&x.every(v=>g.includes(v))))unresolved.push(g.slice())}
  function resolve(ids){
   if(ids.length===1)return [ids];
-  if(ids.length===2){let m=games.find(m=>ids.includes(m.a)&&ids.includes(m.b));if(m&&m.v){let [x,y]=m.v.split('-').map(Number),win=x>y?m.a:m.b;return [[win],[ids.find(i=>i!==win)]]}unresolved.push(ids);return [ids]}
-  let intra={};ids.forEach(i=>intra[i]={w:0,l:0});
-  games.forEach(m=>{if(!m.v||!ids.includes(m.a)||!ids.includes(m.b))return;let [x,y]=m.v.split('-').map(Number);intra[m.a].w+=x;intra[m.a].l+=y;intra[m.b].w+=y;intra[m.b].l+=x});
-  let out=[];buckets(ids,i=>pct(intra[i].w,intra[i].l)).forEach(g=>{if(g.length===1){out.push(g);return}buckets(g,i=>pct(s[i].gf,s[i].ga)).forEach(h=>{if(h.length===1){out.push(h);return}let wins=direct(h);buckets(h,i=>wins[i]).forEach(z=>{if(z.length>1)unresolved.push(z);out.push(z)})})});return out
+  if(ids.length===2){
+   let winner=directWinner(ids[0],ids[1]);
+   if(winner!==null)return [[winner],[ids.find(i=>i!==winner)]];
+   let split=buckets(ids,diff);
+   if(split.length>1)return split;
+   addUnresolved(ids);return [ids];
+  }
+
+  // For 3+ tied pairs, first check whether every pair among them played.
+  let allHeadToHead=true;
+  for(let a=0;a<ids.length;a++)for(let b=a+1;b<ids.length;b++){
+   if(!playedBetween(ids[a],ids[b]))allHeadToHead=false;
+  }
+
+  let firstGroups;
+  if(allHeadToHead){
+   // All direct matches exist: compare game differential only within this tied group.
+   const intra={};ids.forEach(i=>intra[i]={gf:0,ga:0});
+   games.forEach(m=>{
+    if(!m.v||m.v==='NA'||!ids.includes(m.a)||!ids.includes(m.b))return;
+    let [x,y]=m.v.split('-').map(Number);
+    intra[m.a].gf+=x;intra[m.a].ga+=y;
+    intra[m.b].gf+=y;intra[m.b].ga+=x;
+   });
+   firstGroups=buckets(ids,i=>intra[i].gf-intra[i].ga);
+  }else{
+   // At least one direct matchup is missing: go straight to overall game differential.
+   firstGroups=buckets(ids,diff);
+  }
+
+  let result=[];
+  firstGroups.forEach(g=>{
+   if(g.length===1){result.push(g);return;}
+   // If 2 remain tied, direct result takes precedence when it exists.
+   if(g.length===2){
+    let winner=directWinner(g[0],g[1]);
+    if(winner!==null){result.push([winner],[g.find(i=>i!==winner)]);return;}
+    // No direct matchup: overall differential is the next rule.
+    let second=buckets(g,diff);
+    if(second.length>1)result.push(...second);
+    else {addUnresolved(g);result.push(g);}
+    return;
+   }
+   // For 3+ still tied, compare overall game differential.
+   let second=buckets(g,diff);
+   second.forEach(h=>{
+    if(h.length===1){result.push(h);return;}
+    if(h.length===2){
+     let winner=directWinner(h[0],h[1]);
+     if(winner!==null){result.push([winner],[h.find(i=>i!==winner)]);return;}
+    }
+    // 3+ still tied, or 2 with no direct match: janken.
+    addUnresolved(h);result.push(h);
+   });
+  });
+  return result;
  }
- let order=[];buckets([...Array(n).keys()],i=>s[i].p).forEach(g=>order.push(...resolve(g).flat()));
- unresolved.forEach(g=>{let key=g.slice().sort((a,b)=>a-b).join(','),p=janken[key];if(p&&p.length===g.length&&p.every(v=>v!==undefined)){let slots=[];order.forEach((v,i)=>{if(g.includes(v))slots.push(i)});slots.forEach((v,k)=>order[v]=p[k])}});
- let h='<table><tr><th>順位</th><th>ペア</th><th>勝ち点</th><th>勝敗</th><th>ゲーム率</th></tr>';order.forEach((i,k)=>{let q=s[i];h+=`<tr><td>${k+1}</td><td>${pair(i)}</td><td>${q.p}</td><td>${q.w}勝 ${q.l}敗</td><td>${(pct(q.gf,q.ga)*100).toFixed(1)}%</td></tr>`});$('ranking').innerHTML=h+'</table>';
- let t=$('ties');t.innerHTML='';if(!unresolved.length)t.textContent='じゃんけんが必要な同率はありません。';
+
+ let order=[];
+ buckets([...Array(n).keys()],i=>s[i].p).forEach(g=>order.push(...resolve(g).flat()));
+
+ // Apply the manually entered janken order to unresolved positions.
+ unresolved.forEach(g=>{
+  let key=g.slice().sort((a,b)=>a-b).join(','),p=janken[key];
+  if(p&&p.length===g.length&&p.every(v=>v!==undefined)){
+   let slots=[];order.forEach((v,i)=>{if(g.includes(v))slots.push(i)});
+   if(slots.length===g.length)slots.forEach((v,k)=>order[v]=p[k]);
+  }
+ });
+ let h='<table><tr><th>順位</th><th>ペア</th><th>勝ち点</th><th>勝敗</th><th>ゲーム差</th></tr>';
+ order.forEach((i,k)=>{let q=s[i];h+=`<tr><td>${k+1}</td><td>${pair(i)}</td><td>${q.p}</td><td>${q.w}勝 ${q.l}敗</td><td>${q.gf-q.ga>0?'+':''}${q.gf-q.ga}</td></tr>`});
+ $('ranking').innerHTML=h+'</table>';
+
+ let t=$('ties');t.innerHTML='';
+ if(!unresolved.length)t.textContent='じゃんけんが必要な同率はありません。';
  unresolved.forEach(g=>{
   let key=g.slice().sort((a,b)=>a-b).join(','),d=document.createElement('div');d.className='tie';
   let l=document.createElement('label');l.textContent='同率ペアの順位を選択（じゃんけん結果順）';d.append(l);
   let chosen=(janken[key]||[]).slice();
-  g.forEach((_,rank)=>{
-    let line=document.createElement('div');line.className='help';line.style.margin='6px 0';
-    let caption=document.createElement('span');caption.textContent=(rank+1)+'位： ';
-    let sel=document.createElement('select');let blank=document.createElement('option');blank.value='';blank.textContent='ペアを選択';sel.append(blank);
-    g.forEach(i=>{let o=document.createElement('option');o.value=String(i);o.textContent=pair(i);sel.append(o)});
-    sel.value=chosen[rank]!==undefined?String(chosen[rank]):'';
-    sel.onchange=()=>{
-      let next=chosen.slice(0,g.length);next[rank]=sel.value===''?undefined:Number(sel.value);
-      let used=next.filter(v=>v!==undefined);
-      if(new Set(used).size!==used.length){alert('同じペアを重複して選べません。');sel.value='';next[rank]=undefined;}
-      janken[key]=next;chosen=next;
-      calc();
-    };
-    line.append(caption,sel);d.append(line);
+  g.forEach((_,r)=>{
+   let line=document.createElement('div');line.className='help';line.style.margin='6px 0';
+   let caption=document.createElement('span');caption.textContent=(r+1)+'位： ';
+   let sel=document.createElement('select');let blank=document.createElement('option');blank.value='';blank.textContent='ペアを選択';sel.append(blank);
+   g.forEach(i=>{let o=document.createElement('option');o.value=String(i);o.textContent=pair(i);sel.append(o)});
+   sel.value=chosen[r]!==undefined?String(chosen[r]):'';
+   sel.onchange=()=>{
+    let next=chosen.slice(0,g.length);next[r]=sel.value===''?undefined:Number(sel.value);
+    let used=next.filter(v=>v!==undefined);
+    if(new Set(used).size!==used.length){alert('同じペアを重複して選べません。');sel.value='';next[r]=undefined;}
+    janken[key]=next;chosen=next;calc();
+   };
+   line.append(caption,sel);d.append(line);
   });
   t.append(d);
-})
+ });
 }
 $('make').onclick=make;$('format').onchange=()=>{$('help').textContent=$('format').value==='pre'?'予選は勝敗に関係なく3ゲーム。3－0／2－1／1－2／0－3':'決勝は5ゲーム・3ゲーム先取。3－0／3－1／3－2／0－3／1－3／2－3'};make();
 </script></body></html>
