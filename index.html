@@ -7,7 +7,7 @@ body{font-family:system-ui,sans-serif;max-width:850px;margin:auto;padding:12px;b
 <div class="box"><label>リーグ形式</label><select id="format"><option value="pre">予選リーグ（3ゲーム必ず実施）</option><option value="final">決勝リーグ（5ゲーム・3ゲーム先取）</option></select>
 <label>ペア数</label><select id="n"></select> <button id="make">対戦表を作成</button>
 <p id="help" class="help">予選は勝敗に関係なく3ゲーム。3－0／2－1／1－2／0－3</p>
-<p class="help">勝ち2点・負け1点。「対戦なし」は勝ち点・ゲーム数に含めません。同点の場合はゲーム勝率で比較します。2組は直接対決を優先し、直接対決がなければ全試合のゲーム勝率で比較します。3組以上は同点組同士の対戦成績で比較し、同点が残るたびに対象を絞って再比較します。最後まで決まらない場合は全試合のゲーム勝率・直接対決・じゃんけんの順で判定します。ゲーム勝率＝獲得ゲーム数÷（獲得ゲーム数＋失ゲーム数）。</p></div>
+<p class="help">猪名川町卓球協会ローカルルール<br>勝ち2点・負け1点。「対戦なし」は勝ち点・ゲーム数に含めません。同点の場合はゲーム勝率で比較します。2組は直接対決を優先し、直接対決がなければ全試合のゲーム勝率で比較します。3組以上は同点組同士の対戦成績で比較し、同点が残るたびに対象を絞って再比較します。最後まで決まらない場合は全試合のゲーム勝率・直接対決・じゃんけんの順で判定します。ゲーム勝率＝獲得ゲーム数÷（獲得ゲーム数＋失ゲーム数）。</p></div>
 <div class="box"><h2>試合結果入力</h2><div id="matches"></div></div>
 <div class="box"><h2>順位表</h2><div id="ranking" class="help">結果を入力してください。</div></div>
 <div class="box"><h2>じゃんけんによる順位決定</h2><p class="help">同率が残った場合、じゃんけん後の順位順を選んでください。</p><div id="ties"></div></div>
